@@ -267,9 +267,20 @@ func main() {
 	wdir := flag.String("wdir", "", "Working directory. All relative paths take it as reference.")
 	logFileName := flag.String("outputFile", logName, "Path to trace file")
 	writeDefaultTestEnvironment := flag.Bool("writeDef", false, "Writes default rQUIC conf to json.")
+	BTOMargin := flag.Int("BTOMargin", rquic.BTOMargin, "")
+	BTOOnly := flag.Bool("BTOOnly", false, "")
+	PauseEncodingWith := flag.Int("PauseEncodingWith", rquic.PauseEncodingNever, "")
+	ResLossFactor := flag.Float64("ResLossFactor", rquic.ResLossFactor, "")
+	LimRateToDecBuffer := flag.Bool("LimRateToDecBuffer", false, "")
 	flag.Parse()
 
 	//------------------ Digest flags, define tools
+
+	rquic.BTOMargin = *BTOMargin
+	rquic.BTOOnly = *BTOOnly
+	rquic.PauseEncodingWith = *PauseEncodingWith
+	rquic.ResLossFactor = *ResLossFactor
+	rquic.LimRateToDecBuffer = *LimRateToDecBuffer
 
 	// Print or log informative messages as specified by flags.
 	quiet := !*info

@@ -5,7 +5,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"crypto/tls"
 	"errors"
 	"flag"
@@ -39,11 +38,6 @@ func (b binds) String() string {
 func (b *binds) Set(v string) error {
 	*b = strings.Split(v, ",")
 	return nil
-}
-
-// Size is needed by the /demo/upload handler to determine the size of the uploaded file
-type Size interface {
-	Size() int64
 }
 
 // See https://en.wikipedia.org/wiki/Lehmer_random_number_generator
@@ -148,68 +142,6 @@ func setupHandler(www string, trace bool, finishTest chan struct{}) http.Handler
 	return &tracingHandler{handler: mux}
 }
 
-// Inspired by ListenAndServe defined in http3/server.go
-func ListenAndServeHttpTcp(addr, certFile, keyFile string, handler http.Handler, ctx context.Context) error {
-	// Load certs
-	var err error
-	certs := make([]tls.Certificate, 1)
-	certs[0], err = tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return err
-	}
-	// We currently only use the cert-related stuff from tls.Config,
-	// so we don't need to make a full copy.
-	config := &tls.Config{
-		Certificates: certs,
-	}
-
-	// Open the listeners
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
-	if err != nil {
-		return err
-	}
-	tcpConn, err := net.ListenTCP("tcp", tcpAddr)
-	if err != nil {
-		return err
-	}
-	defer tcpConn.Close()
-
-	tlsConn := tls.NewListener(tcpConn, config)
-	defer tlsConn.Close()
-
-	// Start the server
-	httpServer := &http.Server{
-		Addr:      addr,
-		TLSConfig: config,
-	}
-
-	if handler == nil {
-		handler = http.DefaultServeMux
-	}
-	httpServer.Handler = handler
-
-	select {
-	case <-ctx.Done():
-		return nil
-	default:
-	}
-
-	hErr := make(chan error)
-	go func() {
-		hErr <- httpServer.Serve(tlsConn)
-	}()
-
-	select {
-	case err := <-hErr:
-		if er := httpServer.Close(); er != nil {
-			err = fmt.Errorf("%w; server closed with errors: " + er.Error(), err)
-		}
-		return err
-	case <-ctx.Done():
-		return httpServer.Close()
-	}
-}
-
 func main() {
 
 	bs := binds{}
@@ -239,9 +171,20 @@ func main() {
 	wdir := flag.String("wdir", "", "Working directory. All relative paths take it as reference.")
 	logFileName := flag.String("outputFile", logName, "Path to rtrace file")
 	writeDefaultTestEnvironment := flag.Bool("writeDef", false, "Writes default rQUIC conf to json.")
+	BTOMargin := flag.Int("BTOMargin", rquic.BTOMargin, "")
+	BTOOnly := flag.Bool("BTOOnly", false, "")
+	PauseEncodingWith := flag.Int("PauseEncodingWith", rquic.PauseEncodingNever, "")
+	ResLossFactor := flag.Float64("ResLossFactor", rquic.ResLossFactor, "")
+	LimRateToDecBuffer := flag.Bool("LimRateToDecBuffer", false, "")
 	flag.Parse()
 
 	//------------------ Digest flags, define tools
+
+	rquic.BTOMargin = *BTOMargin
+	rquic.BTOOnly = *BTOOnly
+	rquic.PauseEncodingWith = *PauseEncodingWith
+	rquic.ResLossFactor = *ResLossFactor
+	rquic.LimRateToDecBuffer = *LimRateToDecBuffer
 
 	// Set current working directory
 	if *wdir != "" {
@@ -348,13 +291,6 @@ func main() {
 		rLogger.Stop()
 		fmt.Println("rSimRes:Srv:" + rQC.Overview() + "," + rLogger.CountersReport())
 		return // All of them are killed in the script without errors
-		//time.Sleep(2 * time.Second)
-		var err error
-		for _, s := range servers {
-			if err = s.Close(); err != nil {
-				printError("Server closed with errors: " + err.Error())
-			}
-		}
 	}()
 
 	var wwwPath string
@@ -397,7 +333,8 @@ func main() {
 	}
 
 	wg.Add(len(bs))
-	for _, b := range bs {
+	for i, _ := range bs {
+		b := bs[i]
 		go func() {
 			var err error
 			hSrv := &http.Server{
