@@ -263,7 +263,7 @@ const (
 	DefaultScheme      = Globecom2019Scheme
 	DefaultOverlap     = Globecom2019Overlap
 	DefaultReduns      = Globecom2019Reduns
-	DefaultRatioVal    = Globecom2019RatioVal
+	DefaultRatioVal    = MaxRatio / float64(DefaultReduns) // Will be limited to CWND
 	DefaultDynamic     = Globecom2019Dynamic
 	DefaultTPeriod     = Globecom2019TPeriod
 	DefaultNumPeriods  = Globecom2019NumPeriods
