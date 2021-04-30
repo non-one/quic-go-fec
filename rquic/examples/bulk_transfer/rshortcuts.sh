@@ -12,10 +12,12 @@ export SRV_NAME="server_bulk"
 export CLI_NAME="client_sink"
 #>
 #>Options that will be given to client and server programs.
-log="" #-log"
-debug="" #-debug"
-export SRV_OPTS="-info $log $debug -wdir=\"$RTSTBD\" -timeout=5s # -trace"
-export CLI_OPTS="-info $log $debug -wdir=\"$RTSTBD\" # -tcp"
+opts=""
+opts="$opts -info"
+# opts="$opts -log"
+# opts="$opts -debug"
+export SRV_OPTS="$opts -wdir=\"$RTSTBD\" -timeout=5s # -trace"
+export CLI_OPTS="$opts -wdir=\"$RTSTBD\" # -tcp"
 #>
 
 
