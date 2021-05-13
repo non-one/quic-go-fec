@@ -259,7 +259,7 @@ func main() {
 	dst := flag.String("dst", "https://test_server.io:6121", "URL:Port Address")
 	//------------------ Common flags
 	//ip := flag.String("ip", "localhost:6121", "IP:Port Address")
-	trace := flag.Bool("trace", false, "Enable rQUIC traces")
+	rtrace := flag.Bool("rtrace", false, "Enable rQUIC traces")
 	doLog := flag.Bool("log", false, "Enable rQUIC logging")
 	debug := flag.Bool("debug", false, "Enable rQUIC debug logging (if true, ignores log)")
 	info := flag.Bool("info", false, "Print informative messages")
@@ -327,7 +327,7 @@ func main() {
 	} else {
 		logName = *logFileName
 	}
-	if err := rLogger.Init(logName, *trace, *doLog, *debug); err != nil {
+	if err := rLogger.Init(logName, *rtrace, *doLog, *debug); err != nil {
 	} else {
 		rLogger.Logf("Initiating")
 	}

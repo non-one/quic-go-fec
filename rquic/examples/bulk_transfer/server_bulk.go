@@ -31,13 +31,13 @@ func main() {
 	confJson := flag.String("json", "server.json", "Path to json with rQUIC Conf.")
 	//------------------ Common flags
 	ip := flag.String("ip", "localhost:4242", "IP:Port Address")
-	trace := flag.Bool("trace", false, "Enable rQUIC traces")
+	rtrace := flag.Bool("rtrace", false, "Enable rQUIC traces")
 	doLog := flag.Bool("log", false, "Enable rQUIC logging")
 	debug := flag.Bool("debug", false, "Enable rQUIC debug logging (if true, ignores log)")
 	info := flag.Bool("info", false, "Print informative messages")
 	verbose := flag.Bool("v", false, "verbose (QUIC detailed logs)")
 	wdir := flag.String("wdir", "", "Working directory. All relative paths take it as reference.")
-	logFileName := flag.String("outputFile", logName, "Path to trace file")
+	logFileName := flag.String("outputFile", logName, "Path to rtrace file")
 	writeDefaultTestEnvironment := flag.Bool("writeDef", false, "Writes default rQUIC conf to json.")
 	mb := flag.Int("mb", 1, "File size in MiB")
 	BTOMargin := flag.Int("BTOMargin", rquic.BTOMargin, "")
@@ -81,7 +81,7 @@ func main() {
 	} else {
 		logName = *logFileName
 	}
-	if err := rLogger.Init(logName, *trace, *doLog, *debug); err != nil {
+	if err := rLogger.Init(logName, *rtrace, *doLog, *debug); err != nil {
 		rLogger.Logf(err.Error()) // Try to log the error if the logger could be initiated
 		fmt.Println(err)
 	} else {
