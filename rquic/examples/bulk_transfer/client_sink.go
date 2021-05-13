@@ -42,7 +42,8 @@ func main() {
 	logFileName := flag.String("outputFile", logName, "Path to trace file")
 	writeDefaultTestEnvironment := flag.Bool("writeDef", false, "Writes default rQUIC conf to json.")
 	mb := flag.Int("mb", 1, "Expect to receive a file of size in MiB")
-	BTOMargin := flag.Int("BTOMargin", rquic.BTOMargin, "")
+	BTOMargin := flag.Int("BTOMargin", rquic.BTOMargin, "BTO = max_ack_delay - BTOMargin * TimerGranularity")
+	BTOtoRTT := flag.Float64("BTOtoRTT", rquic.BTOtoRTT, "if BTOtoRTT >= 0: BTO = BTOtoRTT * sRTT")
 	BTOOnly := flag.Bool("BTOOnly", false, "")
 	PauseEncodingWith := flag.Int("PauseEncodingWith", rquic.PauseEncodingNever, "")
 	ResLossFactor := flag.Float64("ResLossFactor", rquic.ResLossFactor, "")
@@ -52,6 +53,7 @@ func main() {
 	//------------------ Digest flags, define tools
 
 	rquic.BTOMargin = *BTOMargin
+	rquic.BTOtoRTT = *BTOtoRTT
 	rquic.BTOOnly = *BTOOnly
 	rquic.PauseEncodingWith = *PauseEncodingWith
 	rquic.ResLossFactor = *ResLossFactor

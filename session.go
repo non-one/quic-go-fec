@@ -555,7 +555,8 @@ func (s *session) rQuicSetup(tp *wire.TransportParameters) {
 		s.decoder = rdecoder.MakeDecoder()
 		s.rQuicBuffer = newRQuicReceivedPacketList()
 		// We will start using our own MaxAckDelay for the buffer timeout.
-		s.rQuicBuffer.setTimeoutDuration(tp.MaxAckDelay)
+		s.rQuicBuffer.setFixedTimeout(tp.MaxAckDelay)
+		s.rQuicBuffer.checkRTT = s.rttStats.SmoothedRTT
 	}
 }
 
@@ -1658,7 +1659,7 @@ func (s *session) processTransportParametersImpl(params *wire.TransportParameter
 	s.rttStats.SetMaxAckDelay(params.MaxAckDelay)
 	// rQUIC {
 	if s.decoderEnabled {
-		s.rQuicBuffer.setTimeoutDuration(params.MaxAckDelay)
+		s.rQuicBuffer.setFixedTimeout(params.MaxAckDelay)
 	}
 	// } rQUIC
 	s.connIDGenerator.SetMaxActiveConnIDs(params.ActiveConnectionIDLimit)

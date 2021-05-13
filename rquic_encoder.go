@@ -284,8 +284,8 @@ func (e *encoder) maybeReduceCodingRatio() bool /* did reduce ratio */ {
 	newRatio := float64(cwnd)/protocol.MaxPacketSizeIPv4
 	if rquic.LimRateToDecBuffer { // extremely aggressive!
 		// Match BTO --> CWND/MaxPktSz packets * 1/sRTT pacing * BTO
-		bto := bufferTimeoutDuration(e.localMaxAckDelay)
 		rtt := e.smoothedRTT()
+		bto := bufferTimeoutDuration(e.localMaxAckDelay, rtt)
 		if btoCorrection := float64(bto) / float64(rtt); btoCorrection < 1 {
 			newRatio *= btoCorrection
 		}

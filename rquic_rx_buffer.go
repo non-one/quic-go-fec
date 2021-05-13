@@ -97,7 +97,7 @@ func (p *rQuicReceivedPacket) isHoldingBuffer() bool {
 }
 
 func (p *rQuicReceivedPacket) isWaitingTooLong(sRTT time.Duration) bool {
-	theWait := p.list.timeOut
+	theWait := p.list.timeoutDuration()
 	alarm := p.rp.rcvTime.Add(theWait)
 	rLogger.Debugf("Decoder Buffer Timeout:%v RcvTime:%v", theWait, p.rp.rcvTime.Format(rLogger.TimeOnly))
 	if time.Now().After(alarm) {
@@ -200,8 +200,9 @@ type rQuicReceivedPacketList struct {
 	lastSeenGenOldestPkt byte
 	givingChance2OoOPkts bool
 
-	alarm           time.Time
-	timeOut			time.Duration
+	alarm        time.Time
+	fixedTimeout time.Duration
+	checkRTT     func() time.Duration
 }
 
 // newRQuicReceivedPacketList returns an initialized list.
@@ -353,11 +354,29 @@ func (l *rQuicReceivedPacketList) remove(e *rQuicReceivedPacket) {
 	//rLogger.Debugf("Decoder Buffer Removing "+e.pktInfo()+"IsObsolete:%t", e.isObsolete())
 }
 
-func (l *rQuicReceivedPacketList) setTimeoutDuration(maxAckDelay time.Duration) {
-	l.timeOut = bufferTimeoutDuration(maxAckDelay)
+func (l *rQuicReceivedPacketList) setFixedTimeout(maxAckDelay time.Duration) {
+	l.fixedTimeout = bufferTimeoutDurationFixed(maxAckDelay)
 }
 
-func bufferTimeoutDuration(maxAckDelay time.Duration) time.Duration {
+func (l *rQuicReceivedPacketList) timeoutDuration() time.Duration {
+	if rquic.BTOtoRTT > 0 {
+		return bufferTimeoutDurationRTT(l.checkRTT())
+	}
+	return l.fixedTimeout
+}
+
+func bufferTimeoutDuration(maxAckDelay, rtt time.Duration) time.Duration {
+	if rquic.BTOtoRTT > 0 {
+		return bufferTimeoutDurationRTT(rtt)
+	}
+	return bufferTimeoutDurationFixed(maxAckDelay)
+}
+
+func bufferTimeoutDurationRTT(rtt time.Duration) time.Duration {
+	return time.Duration(float64(rtt) * rquic.BTOtoRTT)
+}
+
+func bufferTimeoutDurationFixed(maxAckDelay time.Duration) time.Duration {
 	// PTO = sRTT + max(4*RTTvar, TimerGranularity) + maxAckDelay >= sRTT + TimerGranularity + maxAckDelay
 	// BTO = PTO_min - sRTT - Margin = TimerGranularity + maxAckDelay - Margin
 	// Margin = TimerGranularity + ActualMargin

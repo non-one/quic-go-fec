@@ -2,6 +2,7 @@ package rquic
 
 
 var BTOOnly = false // bT
+var BTOtoRTT float64 = 0 // 10/3 // * sRTT, will use fixed BTO if <= 0
 var BTOMargin = 1   // bM?
 
 
