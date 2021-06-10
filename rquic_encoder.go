@@ -54,7 +54,6 @@ type encoder struct {
 func (e *encoder) offset() int { return 1 /*1st byte*/ + e.lenDCID }
 
 func (e *encoder) process(p []byte, dcid []byte, ackEliciting bool) {
-	e.maybeReduceCodingRatio()
 	e.checkDCID(dcid)
 
 	// Protect only ACK eliciting packets
@@ -74,10 +73,11 @@ func (e *encoder) process(p []byte, dcid []byte, ackEliciting bool) {
 	// Add SRC to the CODs under construction
 
 	e.firstByte = p[0] & 0xe0 // only unprotected bits
+	codingRatio := e.maybeReduceCodingRatio()
 
 	for i, rb := range e.redunBuilders {
 		rb.builder.AddSrc(e.srcForCoding)
-		if rb.readyToSend(e.ratio.Check()) {
+		if rb.readyToSend(codingRatio) {
 			e.assemble(rb)
 			e.rQuicGenId++
 			e.redunBuilders[i] = e.redunBuildersNew()
@@ -277,7 +277,7 @@ func (e *encoder) updateRQuicOverhead() {
 	rquic.SeedFieldMaxSizeUpdate(sizeSeedCoeff)
 }
 
-func (e *encoder) maybeReduceCodingRatio() bool /* did reduce ratio */ {
+func (e *encoder) maybeReduceCodingRatio() float64 /* cuurent ratio */ {
 	cwnd := e.getCongestionWindow()
 
 	curRatio := e.ratio.Check()
@@ -292,12 +292,18 @@ func (e *encoder) maybeReduceCodingRatio() bool /* did reduce ratio */ {
 	}
 
 	if newRatio >= curRatio {
-		return false
+		return curRatio
+	}
+
+	// static ratio is not changed
+	// but the right value will be returned
+	if !e.ratio.IsDynamic(){
+		return newRatio
 	}
 
 	rLogger.Logf("Encoder Ratio NewRatio(CWND):%f CurrentRatio:%f", newRatio, curRatio)
 	e.ratio.Change(newRatio)
-	return true
+	return newRatio
 }
 
 func (e *encoder) retrieveCodedPackets() []*packetBuffer {
