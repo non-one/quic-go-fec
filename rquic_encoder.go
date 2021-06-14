@@ -281,7 +281,7 @@ func (e *encoder) maybeReduceCodingRatio() float64 /* cuurent ratio */ {
 	cwnd := e.getCongestionWindow()
 
 	curRatio := e.ratio.Check()
-	newRatio := float64(cwnd)/protocol.MaxPacketSizeIPv4
+	newRatio := float64(cwnd) / float64(protocol.MaxPacketSizeIPv4 * e.reduns)
 	if rquic.LimRateToDecBuffer { // extremely aggressive!
 		// Match BTO --> CWND/MaxPktSz packets * 1/sRTT pacing * BTO
 		rtt := e.smoothedRTT()
